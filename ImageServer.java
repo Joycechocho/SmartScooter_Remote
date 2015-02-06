@@ -66,6 +66,10 @@ class ControlFrame extends JFrame{
     //theses are the buttons for message
     public JButton jb_1;
 
+    //theses are the button for remote alarm
+    public JButton jb_alarm;
+    public JButton jb_checked;
+
     //this is the textfield
     public JTextField input_field;
     public JTextField output_field;
@@ -83,9 +87,22 @@ class ControlFrame extends JFrame{
     Dimension screenSize = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
     public int screenHeight = screenSize.height;
     public int screenWidth = screenSize.width;
+    public int imageWidth = screenWidth/2;
+    public int imageHeight = imageWidth*2/3;
+    public int image_position = screenHeight/2 - imageHeight/2;
+
+    /* Recive alarm message */
+    public InputStream input_stream;
+    byte[] rebyte = new byte[18];
+    String message = "";
+
+    /* check for the alarm status*/
+    public static int alarming = 0;
 
     public ControlFrame(){
         /*---------------- For image transmition related code -------------------*/
+
+        //Image img;
 
         // center frame in screen
         setTitle("Control Window");
@@ -139,95 +156,43 @@ class ControlFrame extends JFrame{
             }
         });
         c_panel.add(jb_1);
-        
-        // Create an image to load image to set button icon
-        Image img;
 
-        jb_up = new JButton();
+        jb_alarm = new JButton();
         try {
-            img = ImageIO.read(getClass().getResource("image/up.png"));
-            jb_up.setIcon(new ImageIcon(img));
+            Image img1;
+            img1 = ImageIO.read(getClass().getResource("image/safe.png"));
+            jb_alarm.setIcon(new ImageIcon(img1));
             } catch (IOException ex) {
         }
         //positon x, position y, size width, size height
-        jb_up.setBounds(30,(screenHeight/scale)*4, screenWidth/2 - 30,(screenHeight/scale)*2);
-        jb_up.setFont(new Font("SansSerif",Font.ITALIC ,28) ) ; 
+        jb_alarm.setBounds(30,(screenHeight/scale)*4, 256,256);
+        jb_alarm.setFont(new Font("SansSerif",Font.ITALIC ,28) ) ; 
 
-        jb_up.addMouseListener(new MouseAdapter()
-        {
-            public void mouseClicked(MouseEvent evt){
-            	System.out.println(" clicked ");
-                send_message = "1";
-                clicked_bt = 1;
-                send_flag = 1;
-            }
-        });
-        c_panel.add(jb_up);
-
-        jb_down = new JButton();
-        try {
-            img = ImageIO.read(getClass().getResource("image/down.png"));
-            jb_down.setIcon(new ImageIcon(img));
-            } catch (IOException ex) {
-        }
-        //positon x, position y, size width, size height
-        jb_down.setBounds(30,(screenHeight/scale)*8, screenWidth/2 - 30,(screenHeight/scale)*2);
-        jb_down.setFont(new Font("SansSerif",Font.ITALIC ,28) ) ; 
-
-        jb_down.addMouseListener(new MouseAdapter()
+        jb_alarm.addMouseListener(new MouseAdapter()
         {
             public void mouseClicked(MouseEvent evt){
                 System.out.println(" clicked ");
-                send_message = "2";
-                clicked_bt = 2;
-                send_flag = 1;
+                try {
+                    Image img2;
+                    img2 = ImageIO.read(getClass().getResource("image/safe.png"));
+                    jb_alarm.setIcon(new ImageIcon(img2));
+                    } catch (IOException ex) {
+                }
             }
         });
-        c_panel.add(jb_down);
-
-        jb_left = new JButton();
-        try {
-            img = ImageIO.read(getClass().getResource("image/left.png"));
-            jb_left.setIcon(new ImageIcon(img));
-            } catch (IOException ex) {
-        }
-        //positon x, position y, size width, size height
-        jb_left.setBounds(30,(screenHeight/scale)*6, (screenWidth/2)/2 - 10,(screenHeight/scale)*2);
-        jb_left.setFont(new Font("SansSerif",Font.ITALIC ,28) ) ; 
-
-        jb_left.addMouseListener(new MouseAdapter()
-        {
-            public void mouseClicked(MouseEvent evt){
-                System.out.println(" clicked ");
-                send_message = "3";
-                clicked_bt = 3;
-                send_flag = 1;
-            }
-        });
-        c_panel.add(jb_left);
-
-        jb_right = new JButton();
-        try {
-            img = ImageIO.read(getClass().getResource("image/right.png"));
-            jb_right.setIcon(new ImageIcon(img));
-            } catch (IOException ex) {
-        }
-        //positon x, position y, size width, size height
-        jb_right.setBounds((screenWidth/2)/2+30,(screenHeight/scale)*6, (screenWidth/2)/2 -30,(screenHeight/scale)*2);
-        jb_right.setFont(new Font("SansSerif",Font.ITALIC ,28) ) ; 
-
-        jb_right.addMouseListener(new MouseAdapter()
-        {
-            public void mouseClicked(MouseEvent evt){
-                System.out.println(" clicked ");
-                send_message = "4";
-                clicked_bt = 4;
-                send_flag = 1;
-            }
-        });
-        c_panel.add(jb_right);
+        c_panel.add(jb_alarm);
 
         add(c_panel);
+    }
+
+    public void getAlarm() throws IOException{
+        Socket s = ImageServer.ss_chat.accept();
+        
+        input_stream = s.getInputStream();
+        input_stream.read(rebyte);
+        message = new String(new String(rebyte));
+
+        input_stream.close();
     }
 
 }
@@ -252,12 +217,13 @@ class ImagePanel extends JPanel {
             if((current_time - last_time) != 0){
                 fps = 30/((double)(current_time - last_time)/1000);
             }
-            System.out.println("Got image! fps : " + fps);
+            //System.out.println("Got image! fps : " + fps);
             last_time = current_time;
         }
         this.input_stream = s.getInputStream();
         this.image = ImageIO.read(input_stream);
         this.input_stream.close();
+
         ImageCount++;
     }
    
@@ -266,7 +232,6 @@ class ImagePanel extends JPanel {
         if (image == null) return;
         
         Graphics2D g2 = (Graphics2D) g;
-        g2.rotate(Math.toRadians(270),300,100);
-        g2.drawImage(image, 0, 0, null);
+        g2.drawImage( image, 0 /*UP*/, ImageServer.frame.image_position/*RIGHT*/, ImageServer.frame.imageWidth, ImageServer.frame.imageHeight,null);
     }
 }
